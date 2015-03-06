@@ -1,0 +1,19 @@
+{
+  "uuid": "2de9b682-0d3a-40a0-bd37-f73035585def",
+  "shortName": "Demo-AA",
+  "longName": "Demo-AA",
+  "companyName": "Gregoire Sage",
+  "versionCode": 1,
+  "versionLabel": "1.0",
+  "sdkVersion": "3",
+  "targetPlatforms": ["basalt"],
+  "watchapp": {
+    "watchface": false
+  },
+  "appKeys": {
+    "dummy": 0
+  },
+  "resources": {
+    "media": []
+  }
+}
