@@ -27,9 +27,9 @@ void graphics_draw_line_antialiased(GContext* ctx, GPoint p0, GPoint p1);
 // //! @see \ref graphics_context_set_fill_color()
 // void gpath_draw_filled_antialiased(GContext* ctx, GPath *path);
 
-// //! Draws the outline of a path with antialiasing into a graphics context, using the current stroke color,
-// //! relative to the drawing area as set up by the layering system.
-// //! @param ctx The graphics context to draw into
-// //! @param path The path to fill
-// //! @see \ref graphics_context_set_stroke_color()
-// void gpath_draw_outline_antialiased(GContext* ctx, GPath *path);
+//! Draws the outline of a path with antialiasing into a graphics context, using the current stroke color,
+//! relative to the drawing area as set up by the layering system.
+//! @param ctx The graphics context to draw into
+//! @param path The path to fill
+//! @see \ref graphics_context_set_stroke_color()
+void gpath_draw_outline_antialiased(GContext* ctx, GPath *path);
