@@ -38,10 +38,10 @@ static void update_proc(Layer *layer, GContext *ctx) {
   // Draw lines
   for(int i=0; i<10; i++){
     if(antialias){
-      graphics_draw_line_antialiased(ctx, (GPoint){0,i*h/10}, (GPoint){w*i/10,h});
-      graphics_draw_line_antialiased(ctx, (GPoint){w*i/10,0}, (GPoint){0,h - h*i/10});
-      graphics_draw_line_antialiased(ctx, (GPoint){w*i/10,0}, (GPoint){w,h*i/10});
-      graphics_draw_line_antialiased(ctx, (GPoint){w*i/10,h}, (GPoint){w,h-h*i/10});
+      graphics_draw_line_antialiased(ctx, (GPoint){0,i*h/10}, (GPoint){w*i/10,h}, (GColor8){.argb=(0xC0 + stroke_color)});
+      graphics_draw_line_antialiased(ctx, (GPoint){w*i/10,0}, (GPoint){0,h - h*i/10}, (GColor8){.argb=(0xC0 + stroke_color)});
+      graphics_draw_line_antialiased(ctx, (GPoint){w*i/10,0}, (GPoint){w,h*i/10}, (GColor8){.argb=(0xC0 + stroke_color)});
+      graphics_draw_line_antialiased(ctx, (GPoint){w*i/10,h}, (GPoint){w,h-h*i/10}, (GColor8){.argb=(0xC0 + stroke_color)});
     }
     else{
       graphics_draw_line(ctx, (GPoint){0,i*h/10}, (GPoint){w*i/10,h});

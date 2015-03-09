@@ -86,30 +86,24 @@ void draw_line_antialias_(GBitmap* img, int16_t x1, int16_t y1, int16_t x2, int1
 	}
 }
 
-static GColor8 graphics_context_get_stroke_color(GContext* ctx){
-	return ((GColor8*)ctx)[46];
-}
-
-void graphics_draw_line_antialiased(GContext* ctx, GPoint p0, GPoint p1){
+void graphics_draw_line_antialiased(GContext* ctx, GPoint p0, GPoint p1, GColor8 stroke_color){
 	if(p0.x == p1.x || p0.y == p1.y){
 		graphics_draw_line(ctx, p0, p1);
 	}
 	else {
 		GBitmap* bitmap = graphics_capture_frame_buffer(ctx);
-		GColor8 stroke_color = graphics_context_get_stroke_color(ctx);
 		draw_line_antialias_(bitmap, p0.x, p0.y, p1.x, p1.y, stroke_color);
 		graphics_release_frame_buffer(ctx, bitmap);
 	}
 }
 
-void gpath_draw_outline_antialiased(GContext* ctx, GPath *path){
+void gpath_draw_outline_antialiased(GContext* ctx, GPath *path, GColor8 stroke_color){
 	if(path->num_points == 0)
 		return;	
 
 	GPoint offset = path->offset;
 	int32_t rotation = path->rotation;
 	GBitmap* bitmap = graphics_capture_frame_buffer(ctx);
-	GColor8 stroke_color = graphics_context_get_stroke_color(ctx);
 
   	int32_t s = sin_lookup(rotation);
   	int32_t c = cos_lookup(rotation);
@@ -326,7 +320,7 @@ static void bmpDrawLine(uint8_t *pixels, int bytes_per_row, int x1, int y1, int 
  * Flood fill algorithm : http://en.wikipedia.org/wiki/Flood_fill
  * TO BE IMPROVED to reduce memory consumption
  */
-static void floodFill(GBitmap* bitmap, uint8_t* pixels, int bytes_per_row, GPoint start, GPoint offset, GColor8 color){
+static void floodFill(GBitmap* bitmap, uint8_t* pixels, int bytes_per_row, GPoint start, GPoint offset, GColor8 fill_color){
 	uint8_t* img_pixels = gbitmap_get_data(bitmap);
 	GRect bounds_bmp = gbitmap_get_bounds(bitmap);
   	int16_t  w_bmp 	= bounds_bmp.size.w;
@@ -366,7 +360,7 @@ static void floodFill(GBitmap* bitmap, uint8_t* pixels, int bytes_per_row, GPoin
 		{	
 			// change the color of the pixel in the final image
 			if(grect_contains_point(&bounds_bmp,&((GPoint){x + offset.x, y + offset.y})))
-				img_pixels[x + offset.x + w_bmp * (y + offset.y)] = color.argb;
+				img_pixels[x + offset.x + w_bmp * (y + offset.y)] = fill_color.argb;
 
 			set_pixel_(pixels, bytes_per_row,  x, y);
 			if(!get_pixel_(pixels, bytes_per_row, x, y+1)){
@@ -381,7 +375,7 @@ static void floodFill(GBitmap* bitmap, uint8_t* pixels, int bytes_per_row, GPoin
 }
 
 
-static void gpath_draw_filled_custom(GContext* ctx, GPath *path){
+static void gpath_draw_filled_custom(GContext* ctx, GPath *path, GColor8 fill_color){
 	if(path->num_points == 0)
 		return;	
 
@@ -455,10 +449,9 @@ static void gpath_draw_filled_custom(GContext* ctx, GPath *path){
 
   	// Capture the frame buffer
   	GBitmap* bitmap = graphics_capture_frame_buffer(ctx);
-  	GColor8 stroke_color = graphics_context_get_stroke_color(ctx);
 
   	// flood fill the gpath
-  	floodFill(bitmap, pixels, bytes_per_row, start, top_right, stroke_color);
+  	floodFill(bitmap, pixels, bytes_per_row, start, top_right, fill_color);
 
   	// Release the frame buffer
   	graphics_release_frame_buffer(ctx, bitmap);  	
@@ -474,11 +467,11 @@ static void gpath_draw_filled_custom(GContext* ctx, GPath *path){
 // but with the current API (3.0 and older) when you draw a path filled and its outline, sometimes, some pixels are not drawn between
 // the outline and the interior of the form. That's not what I want...
 // So I've implemented my own gpath_draw_filled : gpath_draw_filled_custom
-void gpath_draw_filled_antialiased(GContext* ctx, GPath *path){
+void gpath_draw_filled_antialiased(GContext* ctx, GPath *path, GColor8 fill_color){
 	// draw the filled gpath
-	gpath_draw_filled_custom(ctx, path);
+	gpath_draw_filled_custom(ctx, path, fill_color);
 	// Draw the antialiased outline around the filled gpath
-	gpath_draw_outline_antialiased(ctx, path);
+	gpath_draw_outline_antialiased(ctx, path, fill_color);
 }
 
 #undef swap_
