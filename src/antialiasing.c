@@ -1,33 +1,50 @@
+// antialiasing.c by Grégoire Sage
+// https://github.com/gregoiresage/pebble-antialiasing-lib
+
 #include <pebble.h>
 #include "antialiasing.h"
+
+#ifdef PBL_COLOR
 
 /**
  * Implementation of the Xiaolin Wu's line algorithm for Pebble
  * http://en.wikipedia.org/wiki/Xiaolin_Wu%27s_line_algorithm
  */
 
-#define interpol_color_(c1, c2) c1 = (int16_t)(c1 * 0x55 + ((int16_t)(c2) * 0x55 - (int16_t)(c1) * 0x55) * br) >> 6;
-inline void _plot(uint8_t* pixels, int16_t w, int16_t h, int16_t x, int16_t y, GColor8 color, float br)
+// In the following fixed-point algorithms, the bottom four bits
+// (bottom one hex digit) are the fractional part.  1.0 == 0x10.
+typedef int fixed;
+#define fixed_1 0x10   // 1.0
+#define fixed_05 0x08  // 0.5
+
+#define int_to_fixed(i) ((i) << 4)
+#define fixed_to_int(i) ((i) >> 4)
+#define fixed_div(a, b) (((a) << 4) / (b))
+#define fixed_mul(a, b) (((a) * (b)) >> 4)
+
+//#define interpol_color_(c1, c2) c1 = (int16_t)(c1 * 0x55 + ((int16_t)(c2) * 0x55 - (int16_t)(c1) * 0x55) * br) >> 6;
+#define interpol_color_(c1, c2) c1 = ((c1) * fixed_1 + ((c2) - (c1)) * br + fixed_05) >> 4
+inline void _plot(uint8_t* pixels, int16_t w, int16_t h, int16_t x, int16_t y, GColor8 color, fixed br)
 {
 	if(x<0 || x>(w-1) || y<0 || y>(h-1))
 		return;
 
 	GColor8* oc = (GColor8*)(pixels + x + w * y);
-	if( br >= 1 ) {
-		memcpy(oc, &color, sizeof(GColor8));
+	if( br >= fixed_1 ) {
+      memcpy(oc, &color, sizeof(GColor8));
 	}
 	else {
-		interpol_color_(oc->r, color.r)
-		interpol_color_(oc->g, color.g)
-		interpol_color_(oc->b, color.b)
+      interpol_color_(oc->r, color.r);
+      interpol_color_(oc->g, color.g);
+      interpol_color_(oc->b, color.b);
 	}
 }
 
-#define ipart_(X) ((int)(X))
-#define fpart_(X) (((float)(X))-(float)ipart_(X))
-#define rfpart_(X) (1.0-fpart_(X))
-#define swap_(a, b) a ^= b; b ^= a; a ^= b;
-#define abs_(a) (a) > 0 ? (a) : -(a);
+#define ipart_(X) ((X) >> 4)
+#define fpart_(X) ((X) & 0xf)
+#define rfpart_(X) (fixed_1 - fpart_(X))
+#define swap_(a, b) { a ^= b; b ^= a; a ^= b; }
+#define abs_(a) ((a) > 0 ? (a) : -(a))
 
 void draw_line_antialias_(GBitmap* img, int16_t x1, int16_t y1, int16_t x2, int16_t y2, GColor8 color)
 {
@@ -35,15 +52,15 @@ void draw_line_antialias_(GBitmap* img, int16_t x1, int16_t y1, int16_t x2, int1
 	int16_t  w 	= gbitmap_get_bounds(img).size.w;
 	int16_t  h 	= gbitmap_get_bounds(img).size.h;
 
-	float dx = abs_(x1 - x2);
-	float dy = abs_(y1 - y2);
+	fixed dx = int_to_fixed(abs_(x1 - x2));
+	fixed dy = int_to_fixed(abs_(y1 - y2));
 	
 	bool steep = dy > dx;
 
-	// _plot(img_pixels, x1, y1, w, h, color, 0.5);
-	// _plot(img_pixels, x2, y2, w, h, color, 0.5);
-	_plot(img_pixels, w, h, x1, y1, color, 1);
-	_plot(img_pixels, w, h, x2, y2, color, 1);
+    //_plot(img_pixels, x1, y1, w, h, color, fixed_05);
+    //_plot(img_pixels, x2, y2, w, h, color, fixed_05);
+	//_plot(img_pixels, w, h, x1, y1, color, fixed_1);
+	//_plot(img_pixels, w, h, x2, y2, color, fixed_1);
 
 	if(steep){
 		swap_(x1, y1);
@@ -57,12 +74,14 @@ void draw_line_antialias_(GBitmap* img, int16_t x1, int16_t y1, int16_t x2, int1
 	dx = x2 - x1;
 	dy = y2 - y1;
 
-	float gradient 	= dy / dx;
-	float intery 	= y1;
- 		
-	int x=0;
-	for(x=x1+1; x < x2; x++) {
-		intery += gradient;
+	//fixed gradient = fixed_div(dy, dx);
+	//fixed intery = int_to_fixed(y1);
+
+    fixed intery;
+	int x;
+	for(x=x1; x <= x2; x++) {
+        //intery += gradient;
+        intery = int_to_fixed(y1) + (int_to_fixed(x - x1) * dy / dx);
 		if(x>=0){
 			if(steep){
 				_plot(img_pixels, w, h, ipart_(intery)    , x, color, rfpart_(intery));
@@ -126,3 +145,6 @@ void gpath_draw_outline_antialiased(GContext* ctx, GPath *path){
 #undef rfpart_
 #undef abs_
 #undef interpol_color_
+
+#endif  // PBL_COLOR
+
