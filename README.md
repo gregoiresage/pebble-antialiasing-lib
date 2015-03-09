@@ -16,7 +16,7 @@ Top lines are antialiased and bottom lines are drawn with the Pebble draw_line m
 
  - Implement graphics_draw_circle_antialiased
  - Implement gpath_draw_filled_antialiased
- - Implement gpath_draw_outline_antialiased
- - Remove float usage
+ - ~~Implement gpath_draw_outline_antialiased~~
+ - ~~Remove float usage~~ thanks to @dwrose
 
 [1]:http://en.wikipedia.org/wiki/Xiaolin_Wu%27s_line_algorithm
