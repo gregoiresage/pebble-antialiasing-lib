@@ -16,7 +16,7 @@ Top lines are antialiased and bottom lines are drawn with the Pebble draw_line m
 
  - Implement graphics_draw_circle_antialiased
  - Implement graphics_fill_circle_antialiased
- - Implement gpath_draw_filled_antialiased
+ - ~~Implement gpath_draw_filled_antialiased~~
  - ~~Implement gpath_draw_outline_antialiased~~
  - ~~Remove float usage~~ thanks to @dwrose
 
