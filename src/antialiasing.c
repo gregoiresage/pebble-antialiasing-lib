@@ -316,6 +316,13 @@ static void bmpDrawLine(uint8_t *pixels, int bytes_per_row, int x1, int y1, int 
 	}
 }
 
+#define increase_queue_size(queue, max_size) \
+GPoint *tmp_queue = malloc(sizeof(GPoint) * (max_size + 1)); \
+memcpy(tmp_queue, queue, sizeof(GPoint) * max_size); \
+max_size++; \
+free(queue); \
+queue = tmp_queue; 
+
 /**
  * Flood fill algorithm : http://en.wikipedia.org/wiki/Flood_fill
  */
@@ -324,7 +331,7 @@ static void floodFill(GBitmap* bitmap, uint8_t* pixels, int bytes_per_row, GPoin
 	GRect bounds_bmp = gbitmap_get_bounds(bitmap);
   	int16_t  w_bmp 	= bounds_bmp.size.w;
 
-	uint32_t max_size = 4;
+	uint32_t max_size = 6;
 	GPoint *queue = malloc(sizeof(GPoint) * max_size);
 	uint32_t size = 0;
 
@@ -346,15 +353,6 @@ static void floodFill(GBitmap* bitmap, uint8_t* pixels, int bytes_per_row, GPoin
 		while(w>=0 && !get_pixel_(pixels, bytes_per_row, w, y))
 			w--;
 
-		// Increase the size of the queue if needed
-		if(size > (max_size - 2*(e-w))){
-			max_size += 4;
-			GPoint *tmp_queue = malloc(sizeof(GPoint) * max_size);
-			memcpy(tmp_queue, queue, sizeof(GPoint) * size);
-			free(queue);
-			queue = tmp_queue;
-		}
-
 		bool up = false;
 		bool down = false;
 		for(x=w+1; x<e; x++)
@@ -370,6 +368,9 @@ static void floodFill(GBitmap* bitmap, uint8_t* pixels, int bytes_per_row, GPoin
 			}
 			else if(down) {
 				down = false;
+				if(size == max_size){
+					increase_queue_size(queue, max_size)
+				}
 				queue[size++] = (GPoint){x-1, y+1};
 			}
 
@@ -378,15 +379,24 @@ static void floodFill(GBitmap* bitmap, uint8_t* pixels, int bytes_per_row, GPoin
 			}
 			else if(up) {
 				up = false;
+				if(size == max_size){
+					increase_queue_size(queue, max_size)
+				}
 				queue[size++] = (GPoint){x-1, y-1};
 			}
 		}
 		if(down) {
 			down = false;
+			if(size == max_size){
+				increase_queue_size(queue, max_size)
+			}
 			queue[size++] = (GPoint){x-1, y+1};
 		}
 		if(up) {
 			up = false;
+			if(size == max_size){
+				increase_queue_size(queue, max_size)
+			}
 			queue[size++] = (GPoint){x-1, y-1};
 		}
 	}
