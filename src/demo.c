@@ -2,6 +2,55 @@
 
 #include "antialiasing.h"
 
+// This is an example of a path that looks like a compound path
+// If you rotate it however, you will see it is a single shape
+static const GPathInfo INFINITY_RECT_PATH_POINTS = {
+  16,
+  (GPoint []) {
+    {-50, 0},
+    {-50, -60},
+    {10, -60},
+    {10, -20},
+    {-10, -20},
+    {-10, -40},
+    {-30, -40},
+    {-30, -20},
+    {50, -20},
+    {50, 40},
+    {-10, 40},
+    {-10, 0},
+    {10, 0},
+    {10, 20},
+    {30, 20},
+    {30, 0}
+  }
+};
+
+// This defines graphics path information to be loaded as a path later
+static const GPathInfo HOUSE_PATH_POINTS = {
+  // This is the amount of points
+  11,
+  // A path can be concave, but it should not twist on itself
+  // The points should be defined in clockwise order due to the rendering
+  // implementation. Counter-clockwise will work in older firmwares, but
+  // it is not officially supported
+  (GPoint []) {
+    {-40, 0},
+    {0, -40},
+    {40, 0},
+    {28, 0},
+    {28, 40},
+    {10, 40},
+    {10, 16},
+    {-10, 16},
+    {-10, 40},
+    {-28, 40},
+    {-28, 0}
+  }
+};
+
+static GPath *s_house_path, *s_infinity_path;
+
 static Window *window;
 static Layer *layer;
 static AppTimer* timer;
@@ -13,8 +62,13 @@ static time_t   prev_t = 0;
 static uint8_t  frames = 0;
 static uint8_t  fps = 0;
 static char     s_fps[64] = "fps";
+static uint16_t angle = 209;
 
 static void timer_callback(void *data) {
+  angle++;
+  angle = angle % 360;
+  gpath_rotate_to(s_infinity_path, (TRIG_MAX_ANGLE * angle) / 360);
+  gpath_rotate_to(s_house_path, (TRIG_MAX_ANGLE * angle) / 360);
   layer_mark_dirty(layer);
 }
 
@@ -37,13 +91,15 @@ static void update_proc(Layer *layer, GContext *ctx) {
 
   // Draw lines
   for(int i=0; i<10; i++){
-    if(antialias){
+    if(antialias)
+    {
       graphics_draw_line_antialiased(ctx, (GPoint){0,i*h/10}, (GPoint){w*i/10,h}, (GColor8){.argb=(0xC0 + stroke_color)});
       graphics_draw_line_antialiased(ctx, (GPoint){w*i/10,0}, (GPoint){0,h - h*i/10}, (GColor8){.argb=(0xC0 + stroke_color)});
       graphics_draw_line_antialiased(ctx, (GPoint){w*i/10,0}, (GPoint){w,h*i/10}, (GColor8){.argb=(0xC0 + stroke_color)});
       graphics_draw_line_antialiased(ctx, (GPoint){w*i/10,h}, (GPoint){w,h-h*i/10}, (GColor8){.argb=(0xC0 + stroke_color)});
     }
-    else{
+    else
+    {
       graphics_draw_line(ctx, (GPoint){0,i*h/10}, (GPoint){w*i/10,h});
       graphics_draw_line(ctx, (GPoint){w*i/10,0}, (GPoint){0,h - h*i/10});
       graphics_draw_line(ctx, (GPoint){w*i/10,0}, (GPoint){w,h*i/10});
@@ -51,18 +107,27 @@ static void update_proc(Layer *layer, GContext *ctx) {
     }
   }
 
+  if(antialias)
+  {
+    gpath_draw_filled_antialiased(ctx, s_infinity_path, (GColor8){.argb=(0xC0 + stroke_color)});
+    gpath_draw_filled_antialiased(ctx, s_house_path, (GColor8){.argb=(0xC0 + stroke_color)});
+  }
+  else 
+  {
+    graphics_context_set_fill_color(ctx, (GColor8){.argb=(0xC0 + stroke_color)});
+    gpath_draw_filled(ctx, s_infinity_path);
+    gpath_draw_filled(ctx, s_house_path);
+  }
 
   graphics_draw_text(ctx, antialias ? "AA" : " ", fonts_get_system_font(FONT_KEY_FONT_FALLBACK), GRect(0, 0, w, 30), GTextOverflowModeWordWrap, GTextAlignmentRight, NULL);
 
-
   // Update fps counter
-  time_t t = 0;
-  time(&t);
+  time_t now = time(NULL);
 
   frames++;
 
-  if(t - prev_t > 1){
-    prev_t = t;
+  if(now - prev_t > 1){
+    prev_t = now;
     fps = frames;
     snprintf(s_fps, sizeof(s_fps), "%d fps", fps);
     frames = 0;
@@ -104,10 +169,18 @@ static void window_load(Window *window) {
   layer = layer_create(bounds);
   layer_set_update_proc(layer,update_proc);
   layer_add_child(window_layer, layer);
+
+  s_infinity_path = gpath_create(&INFINITY_RECT_PATH_POINTS);
+  gpath_move_to(s_infinity_path,(GPoint){144/2,168/4});
+  s_house_path = gpath_create(&HOUSE_PATH_POINTS);
+  gpath_move_to(s_house_path,(GPoint){144/2,3*168/4});
 }
 
 static void window_unload(Window *window) {
   layer_destroy(layer);
+
+  gpath_destroy(s_infinity_path);
+  gpath_destroy(s_house_path);
 }
 
 static void init(void) {
