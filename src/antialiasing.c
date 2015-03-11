@@ -318,28 +318,27 @@ static void bmpDrawLine(uint8_t *pixels, int bytes_per_row, int x1, int y1, int 
 
 /**
  * Flood fill algorithm : http://en.wikipedia.org/wiki/Flood_fill
- * TO BE IMPROVED to reduce memory consumption
  */
 static void floodFill(GBitmap* bitmap, uint8_t* pixels, int bytes_per_row, GPoint start, GPoint offset, GColor8 fill_color){
 	uint8_t* img_pixels = gbitmap_get_data(bitmap);
 	GRect bounds_bmp = gbitmap_get_bounds(bitmap);
   	int16_t  w_bmp 	= bounds_bmp.size.w;
 
-	uint32_t max_size = 1000;
-	uint16_t *queue = malloc(sizeof(uint16_t) * max_size);
+	uint32_t max_size = 4;
+	GPoint *queue = malloc(sizeof(GPoint) * max_size);
 	uint32_t size = 0;
 
 	int32_t x = start.x - offset.x;
 	int32_t y = start.y - offset.y;
 
-	queue[size++] = ((x & 0xFF) << 8) + (y & 0xFF);
+	queue[size++] = (GPoint){x,y};
 	int32_t w,e;
 
 	while(size > 0)
 	{
 		size--;
-		x = (queue[size] >> 8) & 0xFF;
-		y = queue[size]  & 0xFF;
+		x = queue[size].x;
+		y = queue[size].y;
 		w = e = x;
 
 		while(!get_pixel_(pixels, bytes_per_row, e, y))
@@ -349,13 +348,15 @@ static void floodFill(GBitmap* bitmap, uint8_t* pixels, int bytes_per_row, GPoin
 
 		// Increase the size of the queue if needed
 		if(size > (max_size - 2*(e-w))){
-			max_size += 1000;
-			uint16_t *tmp_queue = malloc(sizeof(uint16_t) * max_size);
-			memcpy(tmp_queue, queue, sizeof(uint16_t) * size);
+			max_size += 4;
+			GPoint *tmp_queue = malloc(sizeof(GPoint) * max_size);
+			memcpy(tmp_queue, queue, sizeof(GPoint) * size);
 			free(queue);
 			queue = tmp_queue;
 		}
 
+		bool up = false;
+		bool down = false;
 		for(x=w+1; x<e; x++)
 		{	
 			// change the color of the pixel in the final image
@@ -363,14 +364,33 @@ static void floodFill(GBitmap* bitmap, uint8_t* pixels, int bytes_per_row, GPoin
 				img_pixels[x + offset.x + w_bmp * (y + offset.y)] = fill_color.argb;
 
 			set_pixel_(pixels, bytes_per_row,  x, y);
+
 			if(!get_pixel_(pixels, bytes_per_row, x, y+1)){
-				queue[size++] = ((x & 0xFF) << 8) + ((y+1) & 0xFF);
+				down = true;
 			}
+			else if(down) {
+				down = false;
+				queue[size++] = (GPoint){x-1, y+1};
+			}
+
 			if(!get_pixel_(pixels, bytes_per_row, x, y-1)){
-				queue[size++] = ((x & 0xFF) << 8) + ((y-1) & 0xFF);
+				up = true;
+			}
+			else if(up) {
+				up = false;
+				queue[size++] = (GPoint){x-1, y-1};
 			}
 		}
+		if(down) {
+			down = false;
+			queue[size++] = (GPoint){x-1, y+1};
+		}
+		if(up) {
+			up = false;
+			queue[size++] = (GPoint){x-1, y-1};
+		}
 	}
+
 	free(queue);
 }
 
