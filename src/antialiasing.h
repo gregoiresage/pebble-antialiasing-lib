@@ -19,14 +19,14 @@ void graphics_draw_line_antialiased(GContext* ctx, GPoint p0, GPoint p1, GColor8
 // //! @param p The center point of the circle
 // //! @param radius The radius in pixels
 // //! @param path The stroke color
-// void graphics_draw_circle_antialiased(GContext* ctx, GPoint p, uint16_t radius, GColor8 stroke_color);
+void graphics_draw_circle_antialiased(GContext* ctx, GPoint p, uint16_t radius, GColor8 stroke_color);
 
 // //! Fills a circle in the current fill color with antialiasing
 // //! @param ctx The destination graphics context in which to draw
 // //! @param p The center point of the circle
 // //! @param radius The radius in pixels
 // //! @param path The fill color
-// void graphics_fill_circle_antialiased(GContext* ctx, GPoint p, uint16_t radius, GColor8 fill_color);
+void graphics_fill_circle_antialiased(GContext* ctx, GPoint p, uint16_t radius, GColor8 fill_color);
 
 // //! Draws the fill of a path with antialiasing into a graphics context,
 // //! relative to the drawing area as set up by the layering system.

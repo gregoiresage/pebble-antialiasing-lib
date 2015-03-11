@@ -504,6 +504,73 @@ void gpath_draw_filled_antialiased(GContext* ctx, GPath *path, GColor8 fill_colo
 	gpath_draw_outline_antialiased(ctx, path, fill_color);
 }
 
+
+void graphics_draw_circle_antialiased(GContext* ctx, GPoint center, uint16_t radius, GColor8 stroke_color){
+
+	GBitmap* bitmap = graphics_capture_frame_buffer(ctx);
+
+	uint8_t sections = 9; //TODO tweak that
+	GPoint prev_p = (GPoint){0,0};
+	GPoint p;
+	for (uint8_t i = 0; i < sections; i++)
+	{
+  		int32_t angle = i * TRIG_MAX_ANGLE / (4 *  (sections - 1) );
+  		int32_t s = sin_lookup(angle);
+  		int32_t c = cos_lookup(angle);
+
+  		p.x = -radius * s / TRIG_MAX_RATIO;
+  		p.y =  radius * c / TRIG_MAX_RATIO;
+
+  		// p is the point in the top right quarter (between 0 and 90°)
+  		// by symmmetry we draw the other quarters
+  		if(i>0){
+  			draw_line_antialias_(bitmap, center.x + prev_p.x, center.y + prev_p.y, center.x + p.x, center.y + p.y, stroke_color);
+  			draw_line_antialias_(bitmap, center.x - prev_p.x, center.y + prev_p.y, center.x - p.x, center.y + p.y, stroke_color);
+  			draw_line_antialias_(bitmap, center.x + prev_p.x, center.y - prev_p.y, center.x + p.x, center.y - p.y, stroke_color);
+  			draw_line_antialias_(bitmap, center.x - prev_p.x, center.y - prev_p.y, center.x - p.x, center.y - p.y, stroke_color);
+  		}
+
+  		prev_p = p;
+	}
+	graphics_release_frame_buffer(ctx, bitmap);
+}
+
+/**
+  * From https://github.com/Jnmattern/Minimalist_2.0/blob/master/src/bitmap.h
+  */
+static void bmpFillCircle(GBitmap *bmp, GPoint center, int r, GColor8 c) {
+	int x = 0, y = r, d = r-1, v;
+
+	uint8_t* img_pixels = gbitmap_get_data(bmp);
+	int16_t  w 	= gbitmap_get_bounds(bmp).size.w;
+    
+	while (y >= x) {
+        for (v=center.x-x; v<=center.x+x; v++) img_pixels[v + w*(center.y+y)] = c.argb;
+        for (v=center.x-y; v<=center.x+y; v++) img_pixels[v + w*(center.y+x)] = c.argb;
+        for (v=center.x-x; v<=center.x+x; v++) img_pixels[v + w*(center.y-y)] = c.argb;
+        for (v=center.x-y; v<=center.x+y; v++) img_pixels[v + w*(center.y-x)] = c.argb;
+        
+		if (d >= 2*x-2) {
+			d = d-2*x;
+			x++;
+		} else if (d <= 2*r - 2*y) {
+			d = d+2*y-1;
+			y--;
+		} else {
+			d = d + 2*y - 2*x - 2;
+			y--;
+			x++;
+		}
+	}
+}
+
+void graphics_fill_circle_antialiased(GContext* ctx, GPoint center, uint16_t radius, GColor8 fill_color){
+	GBitmap* bitmap = graphics_capture_frame_buffer(ctx);
+	bmpFillCircle(bitmap, center, radius-1, fill_color);
+	graphics_release_frame_buffer(ctx, bitmap);
+	graphics_draw_circle_antialiased(ctx, center, radius, fill_color);
+}
+
 #undef swap_
 #undef ipart_
 #undef fpart_
