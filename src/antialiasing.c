@@ -87,7 +87,7 @@ void draw_line_antialias_(GBitmap* img, int16_t x1, int16_t y1, int16_t x2, int1
 }
 
 void graphics_draw_line_antialiased(GContext* ctx, GPoint p0, GPoint p1, GColor8 stroke_color){
-	if(p0.x == p1.x || p0.y == p1.y){
+	if(p0.x == p1.x || p0.y == p1.y || p0.x-p1.x == p0.y-p1.y){
 		graphics_draw_line(ctx, p0, p1);
 	}
 	else {
