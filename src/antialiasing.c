@@ -326,20 +326,20 @@ static void floodFill(GBitmap* bitmap, uint8_t* pixels, int bytes_per_row, GPoin
   	int16_t  w_bmp 	= bounds_bmp.size.w;
 
 	uint32_t max_size = 1000;
-	GPoint *queue = malloc(sizeof(GPoint) * max_size);
+	uint16_t *queue = malloc(sizeof(uint16_t) * max_size);
 	uint32_t size = 0;
 
 	int32_t x = start.x - offset.x;
 	int32_t y = start.y - offset.y;
 
-	queue[size++] = (GPoint){x, y};
+	queue[size++] = ((x & 0xFF) << 8) + (y & 0xFF);
 	int32_t w,e;
 
 	while(size > 0)
 	{
 		size--;
-		x = queue[size].x;
-		y = queue[size].y;
+		x = (queue[size] >> 8) & 0xFF;
+		y = queue[size]  & 0xFF;
 		w = e = x;
 
 		while(!get_pixel_(pixels, bytes_per_row, e, y))
@@ -350,8 +350,8 @@ static void floodFill(GBitmap* bitmap, uint8_t* pixels, int bytes_per_row, GPoin
 		// Increase the size of the queue if needed
 		if(size > (max_size - 2*(e-w))){
 			max_size += 1000;
-			GPoint *tmp_queue = malloc(sizeof(GPoint) * max_size);
-			memcpy(tmp_queue, queue, sizeof(GPoint) * size);
+			uint16_t *tmp_queue = malloc(sizeof(uint16_t) * max_size);
+			memcpy(tmp_queue, queue, sizeof(uint16_t) * size);
 			free(queue);
 			queue = tmp_queue;
 		}
@@ -364,10 +364,10 @@ static void floodFill(GBitmap* bitmap, uint8_t* pixels, int bytes_per_row, GPoin
 
 			set_pixel_(pixels, bytes_per_row,  x, y);
 			if(!get_pixel_(pixels, bytes_per_row, x, y+1)){
-				queue[size++] = (GPoint){x, y+1};
+				queue[size++] = ((x & 0xFF) << 8) + ((y+1) & 0xFF);
 			}
 			if(!get_pixel_(pixels, bytes_per_row, x, y-1)){
-				queue[size++] = (GPoint){x, y-1};
+				queue[size++] = ((x & 0xFF) << 8) + ((y-1) & 0xFF);
 			}
 		}
 	}
