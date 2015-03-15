@@ -44,7 +44,6 @@ inline void _plot(uint8_t* pixels, int16_t w, int16_t h, int16_t x, int16_t y, G
 #define fpart_(X) ((X) & 0xf)
 #define rfpart_(X) (fixed_1 - fpart_(X))
 #define swap_(a, b) { a ^= b; b ^= a; a ^= b; }
-#define abs_(a) ((a) > 0 ? (a) : -(a))
 
 void draw_line_antialias_(GBitmap* img, int16_t x1, int16_t y1, int16_t x2, int16_t y2, GColor8 color)
 {
@@ -52,8 +51,8 @@ void draw_line_antialias_(GBitmap* img, int16_t x1, int16_t y1, int16_t x2, int1
 	int16_t  w 	= gbitmap_get_bounds(img).size.w;
 	int16_t  h 	= gbitmap_get_bounds(img).size.h;
 
-	fixed dx = int_to_fixed(abs_(x1 - x2));
-	fixed dy = int_to_fixed(abs_(y1 - y2));
+	fixed dx = int_to_fixed(abs(x1 - x2));
+	fixed dy = int_to_fixed(abs(y1 - y2));
 	
 	bool steep = dy > dx;
 
@@ -87,7 +86,7 @@ void draw_line_antialias_(GBitmap* img, int16_t x1, int16_t y1, int16_t x2, int1
 }
 
 void graphics_draw_line_antialiased(GContext* ctx, GPoint p0, GPoint p1, GColor8 stroke_color){
-	if(p0.x == p1.x || p0.y == p1.y || p0.x-p1.x == p0.y-p1.y){
+	if(p0.x == p1.x || p0.y == p1.y || p0.x-p1.x == p0.y-p1.y || p0.x-p1.x == p1.y-p0.y){
 		graphics_draw_line(ctx, p0, p1);
 	}
 	else {
@@ -575,7 +574,6 @@ void graphics_fill_circle_antialiased(GContext* ctx, GPoint center, uint16_t rad
 #undef ipart_
 #undef fpart_
 #undef rfpart_
-#undef abs_
 #undef interpol_color_
 #undef set_pixel_
 #undef get_pixel
